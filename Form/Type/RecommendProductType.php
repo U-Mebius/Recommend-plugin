@@ -11,7 +11,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Plugin\Recommend\Form\Type;
+namespace Plugin\Recommend4\Form\Type;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Eccube\Common\EccubeConfig;
@@ -111,7 +111,7 @@ class RecommendProductType extends AbstractType
     public function configureOptions(OptionsResolver $resolver)
     {
         $resolver->setDefaults([
-            'data_class' => 'Plugin\Recommend\Entity\RecommendProduct',
+            'data_class' => 'Plugin\Recommend4\Entity\RecommendProduct',
         ]);
     }
 

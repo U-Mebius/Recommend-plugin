@@ -11,11 +11,11 @@
  * file that was distributed with this source code.
  */
 
-namespace Plugin\Recommend\Repository;
+namespace Plugin\Recommend4\Repository;
 
 use Eccube\Entity\Master\ProductStatus;
 use Eccube\Repository\AbstractRepository;
-use Plugin\Recommend\Entity\RecommendProduct;
+use Plugin\Recommend4\Entity\RecommendProduct;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 
 /**

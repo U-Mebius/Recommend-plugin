@@ -11,7 +11,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Plugin\Recommend\Tests\Web;
+namespace Plugin\Recommend4\Tests\Web;
 
 use Eccube\Common\Constant;
 use Eccube\Entity\Master\ProductStatus;
@@ -19,7 +19,7 @@ use Eccube\Entity\Product;
 use Eccube\Repository\Master\ProductStatusRepository;
 use Eccube\Repository\ProductRepository;
 use Eccube\Tests\Web\Admin\AbstractAdminWebTestCase;
-use Plugin\Recommend\Repository\RecommendProductRepository;
+use Plugin\Recommend4\Repository\RecommendProductRepository;
 
 /**
  * Class RecommendAdminControllerTest.
@@ -395,14 +395,14 @@ class RecommendAdminControllerTest extends AbstractAdminWebTestCase
      * @param $productId
      * @param $rank
      *
-     * @return \Plugin\Recommend\Entity\RecommendProduct
+     * @return \Plugin\Recommend4\Entity\RecommendProduct
      */
     private function initRecommendData($productId, $rank)
     {
         $dateTime = new \DateTime();
         $fake = $this->getFaker();
 
-        $Recommend = new \Plugin\Recommend\Entity\RecommendProduct();
+        $Recommend = new \Plugin\Recommend4\Entity\RecommendProduct();
         $Recommend->setComment($fake->word);
         $Recommend->setProduct($this->productRepo->find($productId));
         $Recommend->setSortno($rank);

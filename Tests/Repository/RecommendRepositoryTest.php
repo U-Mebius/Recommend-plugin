@@ -11,12 +11,12 @@
  * file that was distributed with this source code.
  */
 
-namespace Plugin\Recommend\Tests\Repository;
+namespace Plugin\Recommend4\Tests\Repository;
 
 use Eccube\Repository\ProductRepository;
 use Eccube\Tests\Web\Admin\AbstractAdminWebTestCase;
-use Plugin\Recommend\Entity\RecommendProduct;
-use Plugin\Recommend\Repository\RecommendProductRepository;
+use Plugin\Recommend4\Entity\RecommendProduct;
+use Plugin\Recommend4\Repository\RecommendProductRepository;
 
 /**
  * Class RecommendRepositoryTest.
@@ -158,7 +158,7 @@ class RecommendRepositoryTest extends AbstractAdminWebTestCase
         $dateTime = new \DateTime();
         $fake = $this->getFaker();
 
-        $Recommend = new \Plugin\Recommend\Entity\RecommendProduct();
+        $Recommend = new \Plugin\Recommend4\Entity\RecommendProduct();
         $Recommend->setComment($fake->word);
         $Recommend->setProduct($this->productRepository->find($productId));
         $Recommend->setSortno($rank);

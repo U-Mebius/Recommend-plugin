@@ -11,10 +11,10 @@
  * file that was distributed with this source code.
  */
 
-namespace Plugin\Recommend\Service;
+namespace Plugin\Recommend4\Service;
 
-use Plugin\Recommend\Entity\RecommendProduct;
-use Plugin\Recommend\Repository\RecommendProductRepository;
+use Plugin\Recommend4\Entity\RecommendProduct;
+use Plugin\Recommend4\Repository\RecommendProductRepository;
 
 /**
  * Class RecommendService.

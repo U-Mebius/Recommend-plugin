@@ -14,7 +14,7 @@ php:
 env:
   # plugin code
   global:
-    PLUGIN_CODE=Recommend
+    PLUGIN_CODE=Recommend4
     BRANCH=4.0
 
 before_install: &php_setup |
