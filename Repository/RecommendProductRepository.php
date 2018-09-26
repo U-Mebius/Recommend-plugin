@@ -77,6 +77,7 @@ class RecommendProductRepository extends AbstractRepository
         $query = $this->createQueryBuilder('rp')
             ->innerJoin('Eccube\Entity\Product', 'p', 'WITH', 'p.id = rp.Product')
             ->where('p.Status = :Disp')
+            ->andWhere('rp.visible = true')
             ->orderBy('rp.sort_no', 'DESC')
             ->setParameter('Disp', ProductStatus::DISPLAY_SHOW)
             ->getQuery();

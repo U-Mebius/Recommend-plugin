@@ -76,9 +76,23 @@ class RecommendRepositoryTest extends AbstractAdminWebTestCase
      */
     public function testGetRecommendProduct()
     {
+        // visible=false が2件
         $RecommendProducts = $this->recommendProductRepository->getRecommendProduct();
 
         $this->expected = 2;
+        $this->actual = count($RecommendProducts);
+        $this->verify();
+
+        // 1件をvisible=falseに変更
+        /** @var RecommendProduct $VisibleRecommendProducts[] */
+        $VisibleRecommendProducts = $this->recommendProductRepository->findBy(['sort_no' => 2]);
+        $VisibleRecommendProducts[0]->setVisible(false);
+        $this->entityManager->flush($VisibleRecommendProducts[0]);
+
+        // visible=false が1件
+        $RecommendProducts = $this->recommendProductRepository->getRecommendProduct();
+
+        $this->expected = 1;
         $this->actual = count($RecommendProducts);
         $this->verify();
     }
