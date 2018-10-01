@@ -16,7 +16,6 @@ namespace Plugin\Recommend4\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Eccube\Entity\AbstractEntity;
 use Eccube\Entity\Product;
-use Eccube\Util\EntityUtil;
 
 /**
  * RecommendProduct
@@ -248,10 +247,6 @@ class RecommendProduct extends AbstractEntity
      */
     public function getProduct()
     {
-        if (EntityUtil::isEmpty($this->Product)) {
-            return null;
-        }
-
         return $this->Product;
     }
 }

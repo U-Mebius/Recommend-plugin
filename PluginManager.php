@@ -14,7 +14,6 @@
 namespace Plugin\Recommend4;
 
 use Eccube\Application;
-use Eccube\Common\Constant;
 use Eccube\Entity\Block;
 use Eccube\Entity\BlockPosition;
 use Eccube\Entity\Layout;
@@ -67,6 +66,7 @@ class PluginManager extends AbstractPluginManager
     {
         // ブロックの削除
         $this->removeDataBlock($container);
+        $this->removeBlock($container);
     }
 
     /**
@@ -91,7 +91,7 @@ class PluginManager extends AbstractPluginManager
      */
     public function disable(array $meta = null, ContainerInterface $container)
     {
-        $this->removeBlock($container);
+        $this->removeDataBlock($container);
     }
 
     /**
@@ -122,7 +122,8 @@ class PluginManager extends AbstractPluginManager
             // Blockの登録
             $Block->setName($this->blockName)
                 ->setFileName($this->blockFileName)
-                ->setUseController(Constant::DISABLED);
+                ->setUseController(false)
+                ->setDeletable(false);
             $em->persist($Block);
             $em->flush($Block);
 
@@ -207,8 +208,11 @@ class PluginManager extends AbstractPluginManager
         $templateDir = $container->getParameter('eccube_theme_front_dir');
         // ファイルコピー
         $file = new Filesystem();
-        // ブロックファイルをコピー
-        $file->copy($this->originBlock, $templateDir.'/Block/'.$this->blockFileName.'.twig');
+
+        if (!$file->exists($templateDir.'/Block/'.$this->blockFileName.'.twig')) {
+            // ブロックファイルをコピー
+            $file->copy($this->originBlock, $templateDir.'/Block/'.$this->blockFileName.'.twig');
+        }
     }
 
     /**
