@@ -1,22 +1,30 @@
 <?php
+
 /*
- * This file is part of the Recommend Product plugin
+ * This file is part of EC-CUBE
  *
- * Copyright (C) 2016 LOCKON CO.,LTD. All Rights Reserved.
+ * Copyright(c) LOCKON CO.,LTD. All Rights Reserved.
+ *
+ * http://www.lockon.co.jp/
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Plugin\Recommend\Controller;
+namespace Plugin\Recommend4\Controller;
 
-use Eccube\Application;
 use Eccube\Controller\AbstractController;
-use Plugin\Recommend\Entity\RecommendProduct;
+use Eccube\Form\Type\Admin\SearchProductType;
+use Plugin\Recommend4\Entity\RecommendProduct;
+use Plugin\Recommend4\Form\Type\RecommendProductType;
+use Plugin\Recommend4\Repository\RecommendProductRepository;
+use Plugin\Recommend4\Service\RecommendService;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
 use Symfony\Component\Form\Form;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\Routing\Annotation\Route;
 
 /**
  * Class RecommendController.
@@ -24,46 +32,73 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 class RecommendController extends AbstractController
 {
     /**
+     * @var RecommendProductRepository
+     */
+    private $recommendProductRepository;
+
+    /**
+     * @var RecommendService
+     */
+    private $recommendService;
+
+    /**
+     * RecommendController constructor.
+     *
+     * @param RecommendProductRepository $recommendProductRepository
+     * @param RecommendService $recommendService
+     */
+    public function __construct(RecommendProductRepository $recommendProductRepository, RecommendService $recommendService)
+    {
+        $this->recommendProductRepository = $recommendProductRepository;
+        $this->recommendService = $recommendService;
+    }
+
+    /**
      * おすすめ商品一覧.
      *
-     * @param Application $app
      * @param Request     $request
      *
-     * @return Response
+     * @return array
+     * @Route("/%eccube_admin_route%/plugin/recommend", name="plugin_recommend_list")
+     * @Template("@Recommend4/admin/index.twig")
      */
-    public function index(Application $app, Request $request)
+    public function index(Request $request)
     {
-        $pagination = $app['eccube.plugin.recommend.repository.recommend_product']->getRecommendList();
+        $pagination = $this->recommendProductRepository->getRecommendList();
 
-        return $app->render('Recommend/Resource/template/admin/index.twig', array(
+        return [
             'pagination' => $pagination,
             'total_item_count' => count($pagination),
-        ));
+        ];
     }
 
     /**
      * Create & Edit.
      *
-     * @param Application $app
      * @param Request     $request
      * @param int         $id
      *
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @throws \Exception
+     *
+     * @return array|RedirectResponse
+     * @Route("/%eccube_admin_route%/plugin/recommend/new", name="plugin_recommend_new")
+     * @Route("/%eccube_admin_route%/plugin/recommend/{id}/edit", name="plugin_recommend_edit", requirements={"id" = "\d+"})
+     * @Template("@Recommend4/admin/regist.twig")
      */
-    public function edit(Application $app, Request $request, $id = null)
+    public function edit(Request $request, $id = null)
     {
         /* @var RecommendProduct $Recommend */
         $Recommend = null;
         $Product = null;
         if (!is_null($id)) {
             // IDからおすすめ商品情報を取得する
-            $Recommend = $app['eccube.plugin.recommend.repository.recommend_product']->find($id);
+            $Recommend = $this->recommendProductRepository->find($id);
 
             if (!$Recommend) {
-                $app->addError('admin.recommend.not_found', 'admin');
-                log_info('The recommend product is not found.', array('Recommend id' => $id));
+                $this->addError('plugin_recommend.admin.not_found', 'admin');
+                log_info('The recommend product is not found.', ['Recommend id' => $id]);
 
-                return $app->redirect($app->url('admin_recommend_list'));
+                return $this->redirectToRoute('plugin_recommend_list');
             }
 
             $Product = $Recommend->getProduct();
@@ -71,129 +106,114 @@ class RecommendController extends AbstractController
 
         // formの作成
         /* @var Form $form */
-        $form = $app['form.factory']
-            ->createBuilder('admin_recommend', $Recommend)
+        $form = $this->formFactory
+            ->createBuilder(RecommendProductType::class, $Recommend)
             ->getForm();
 
         $form->handleRequest($request);
         $data = $form->getData();
         if ($form->isSubmitted() && $form->isValid()) {
-            $service = $app['eccube.plugin.recommend.service.recommend'];
+            $service = $this->recommendService;
             if (is_null($data['id'])) {
                 if ($status = $service->createRecommend($data)) {
-                    $app->addSuccess('admin.plugin.recommend.register.success', 'admin');
-                    log_info('Add the new recommend product success.', array('Product id' => $data['Product']->getId()));
+                    $this->addSuccess('plugin_recommend.admin.register.success', 'admin');
+                    log_info('Add the new recommend product success.', ['Product id' => $data['Product']->getId()]);
                 }
             } else {
                 if ($status = $service->updateRecommend($data)) {
-                    $app->addSuccess('admin.plugin.recommend.update.success', 'admin');
-                    log_info('Update the recommend product success.', array('Recommend id' => $Recommend->getId(), 'Product id' => $data['Product']->getId()));
+                    $this->addSuccess('plugin_recommend.admin.update.success', 'admin');
+                    log_info('Update the recommend product success.', ['Recommend id' => $Recommend->getId(), 'Product id' => $data['Product']->getId()]);
                 }
             }
 
             if (!$status) {
-                $app->addError('admin.recommend.not_found', 'admin');
-                log_info('Failed the recommend product updating.', array('Product id' => $data['Product']->getId()));
+                $this->addError('plugin_recommend.admin.not_found', 'admin');
+                log_info('Failed the recommend product updating.', ['Product id' => $data['Product']->getId()]);
             }
 
-            return $app->redirect($app->url('admin_recommend_list'));
+            return $this->redirectToRoute('plugin_recommend_list');
         }
 
         if (!empty($data['Product'])) {
             $Product = $data['Product'];
         }
 
-        $arrProductIdByRecommend = $app['eccube.plugin.recommend.repository.recommend_product']->getRecommendProductIdAll();
+        $arrProductIdByRecommend = $this->recommendProductRepository->getRecommendProductIdAll();
 
         return $this->registerView(
-            $app,
-            array(
+            [
                 'form' => $form->createView(),
                 'recommend_products' => json_encode($arrProductIdByRecommend),
                 'Product' => $Product,
-            )
+            ]
         );
     }
 
     /**
      * おすすめ商品の削除.
      *
-     * @param Application $app
      * @param Request     $request
-     * @param int         $id
+     * @param RecommendProduct $RecommendProduct
      *
-     * @throws BadRequestHttpException
+     * @throws \Exception
      *
      * @return \Symfony\Component\HttpFoundation\RedirectResponse
+     * @Route("/%eccube_admin_route%/plugin/recommend/{id}/delete", name="plugin_recommend_delete", requirements={"id" = "\d+"}, methods={"DELETE"})
      */
-    public function delete(Application $app, Request $request, $id)
+    public function delete(Request $request, RecommendProduct $RecommendProduct)
     {
         // Valid token
-        $this->isTokenValid($app);
-
-        // Check request
-        if (!'POST' === $request->getMethod()) {
-            log_error('Delete with bad method!');
-            throw new BadRequestHttpException();
-        }
-
-        // Id valid
-        if (!$id) {
-            $app->addError('admin.recommend.recommend_id.not_exists', 'admin');
-
-            return $app->redirect($app->url('admin_recommend_list'));
-        }
-
-        $service = $app['eccube.plugin.recommend.service.recommend'];
-
+        $this->isTokenValid();
         // おすすめ商品情報を削除する
-        if ($service->deleteRecommend($id)) {
-            log_info('The recommend product delete success!', array('Recommend id' => $id));
-            $app->addSuccess('admin.plugin.recommend.delete.success', 'admin');
+        if ($this->recommendProductRepository->deleteRecommend($RecommendProduct)) {
+            log_info('The recommend product delete success!', ['Recommend id' => $RecommendProduct->getId()]);
+            $this->addSuccess('plugin_recommend.admin.delete.success', 'admin');
         } else {
-            $app->addError('admin.recommend.not_found', 'admin');
-            log_info('The recommend product is not found.', array('Recommend id' => $id));
+            $this->addError('plugin_recommend.admin.not_found', 'admin');
+            log_info('The recommend product is not found.', ['Recommend id' => $RecommendProduct->getId()]);
         }
 
-        return $app->redirect($app->url('admin_recommend_list'));
+        return $this->redirectToRoute('plugin_recommend_list');
     }
 
     /**
      * Move rank with ajax.
      *
-     * @param Application $app
      * @param Request     $request
      *
-     * @return bool
+     * @throws \Exception
+     *
+     * @return Response
+     *
+     * @Route("/%eccube_admin_route%/plugin/recommend/sort_no/move", name="plugin_recommend_rank_move")
      */
-    public function moveRank(Application $app, Request $request)
+    public function moveRank(Request $request)
     {
         if ($request->isXmlHttpRequest()) {
             $arrRank = $request->request->all();
-            $arrRankMoved = $app['eccube.plugin.recommend.repository.recommend_product']->moveRecommendRank($arrRank);
+            $arrRankMoved = $this->recommendProductRepository->moveRecommendRank($arrRank);
             log_info('Recommend move rank', $arrRankMoved);
         }
 
-        return true;
+        return new Response('OK');
     }
 
     /**
      * 編集画面用のrender.
      *
-     * @param Application $app
      * @param array       $parameters
      *
-     * @return Response
+     * @return array
      */
-    protected function registerView($app, $parameters = array())
+    protected function registerView($parameters = [])
     {
         // 商品検索フォーム
-        $searchProductModalForm = $app['form.factory']->createBuilder('admin_search_product')->getForm();
-        $viewParameters = array(
+        $searchProductModalForm = $this->formFactory->createBuilder(SearchProductType::class)->getForm();
+        $viewParameters = [
             'searchProductModalForm' => $searchProductModalForm->createView(),
-        );
+        ];
         $viewParameters += $parameters;
 
-        return $app->render('Recommend/Resource/template/admin/regist.twig', $viewParameters);
+        return $viewParameters;
     }
 }

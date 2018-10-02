@@ -1,19 +1,22 @@
 <?php
+
 /*
- * This file is part of the Recommend plugin
+ * This file is part of EC-CUBE
  *
- * Copyright (C) 2016 LOCKON CO.,LTD. All Rights Reserved.
+ * Copyright(c) LOCKON CO.,LTD. All Rights Reserved.
+ *
+ * http://www.lockon.co.jp/
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Plugin\Recommend\Tests\Repository;
+namespace Plugin\Recommend4\Tests\Repository;
 
-use Eccube\Common\Constant;
+use Eccube\Repository\ProductRepository;
 use Eccube\Tests\Web\Admin\AbstractAdminWebTestCase;
-use Plugin\Recommend\Entity\RecommendProduct;
-use Eccube\Entity\Master\Disp;
+use Plugin\Recommend4\Entity\RecommendProduct;
+use Plugin\Recommend4\Repository\RecommendProductRepository;
 
 /**
  * Class RecommendRepositoryTest.
@@ -21,17 +24,39 @@ use Eccube\Entity\Master\Disp;
 class RecommendRepositoryTest extends AbstractAdminWebTestCase
 {
     /**
+     * @var RecommendProductRepository
+     */
+    private $recommendProductRepository;
+
+    /**
+     * @var ProductRepository
+     */
+    private $productRepository;
+
+    /**
+     * @var RecommendProduct
+     */
+    private $Recommend;
+
+    /**
+     * @var RecommendProduct
+     */
+    private $Recommend2;
+
+    /**
      * Delete all Recommend for testing.
      */
     public function setUp()
     {
         parent::setUp();
-        $this->deleteAllRows(array('plg_recommend_product'));
+        $this->deleteAllRows(['plg_recommend_product']);
+        $this->recommendProductRepository = $this->container->get(RecommendProductRepository::class);
+        $this->productRepository = $this->container->get(ProductRepository::class);
 
         // recommend for product 1 with rank 1
-        $this->initRecommendData(1, 1);
+        $this->Recommend = $this->initRecommendData(1, 1);
         // recommend for product 2 with rank 2
-        $this->initRecommendData(2, 2);
+        $this->Recommend2 = $this->initRecommendData(2, 2);
     }
 
     /**
@@ -39,7 +64,7 @@ class RecommendRepositoryTest extends AbstractAdminWebTestCase
      */
     public function testGetMaxRank()
     {
-        $ProductsOver = $this->app['eccube.plugin.recommend.repository.recommend_product']->getMaxRank();
+        $ProductsOver = $this->recommendProductRepository->getMaxRank();
 
         $this->expected = 2;
         $this->actual = $ProductsOver;
@@ -51,11 +76,88 @@ class RecommendRepositoryTest extends AbstractAdminWebTestCase
      */
     public function testGetRecommendProduct()
     {
-        $Disp = $this->app['eccube.repository.master.disp']->find(Disp::DISPLAY_SHOW);
-        $RecommendProducts = $this->app['eccube.plugin.recommend.repository.recommend_product']->getRecommendProduct($Disp);
+        // visible=false が2件
+        $RecommendProducts = $this->recommendProductRepository->getRecommendProduct();
 
         $this->expected = 2;
         $this->actual = count($RecommendProducts);
+        $this->verify();
+
+        // 1件をvisible=falseに変更
+        /** @var RecommendProduct $VisibleRecommendProducts[] */
+        $VisibleRecommendProducts = $this->recommendProductRepository->findBy(['sort_no' => 2]);
+        $VisibleRecommendProducts[0]->setVisible(false);
+        $this->entityManager->flush($VisibleRecommendProducts[0]);
+
+        // visible=false が1件
+        $RecommendProducts = $this->recommendProductRepository->getRecommendProduct();
+
+        $this->expected = 1;
+        $this->actual = count($RecommendProducts);
+        $this->verify();
+    }
+
+    /**
+     * function : GetRecommendList.
+     */
+    public function testGetRecommendList()
+    {
+        $RecommendProducts = $this->recommendProductRepository->getRecommendList();
+
+        $this->expected = 2;
+        $this->actual = count($RecommendProducts);
+        $this->verify();
+    }
+
+    /**
+     * function : countRecommend.
+     */
+    public function testCountRecommend()
+    {
+        $countRecommend = $this->recommendProductRepository->countRecommend();
+
+        $this->expected = 2;
+        $this->actual = $countRecommend;
+        $this->verify();
+    }
+
+    /**
+     * function : moveRecommendRank.
+     */
+    public function testMoveRecommendRank()
+    {
+        $arrRecommend = [
+            $this->Recommend->getId() => 2,
+            $this->Recommend2->getId() => 1,
+        ];
+        $arrRankMoved = $this->recommendProductRepository->moveRecommendRank($arrRecommend);
+
+        $this->expected = $arrRecommend[$this->Recommend->getId()];
+        $this->actual = $arrRankMoved[$this->Recommend->getId()];
+        $this->verify();
+    }
+
+    /**
+     * function : getRecommendProductIdAll.
+     */
+    public function testGetRecommendProductIdAll()
+    {
+        $productIdAll = $this->recommendProductRepository->getRecommendProductIdAll();
+
+        $this->expected = [1, 2];
+        $this->actual = $productIdAll;
+        $this->verify();
+    }
+
+    /**
+     * function : deleteRecommend.
+     */
+    public function testDeleteRecommend()
+    {
+        $deleteRecommend = $this->recommendProductRepository->deleteRecommend($this->Recommend);
+
+        $this->expected = true;
+        $this->actual = $deleteRecommend;
         $this->verify();
     }
 
@@ -70,15 +172,15 @@ class RecommendRepositoryTest extends AbstractAdminWebTestCase
         $dateTime = new \DateTime();
         $fake = $this->getFaker();
 
-        $Recommend = new \Plugin\Recommend\Entity\RecommendProduct();
+        $Recommend = new \Plugin\Recommend4\Entity\RecommendProduct();
         $Recommend->setComment($fake->word);
-        $Recommend->setProduct($this->app['eccube.repository.product']->find($productId));
-        $Recommend->setRank($rank);
-        $Recommend->setDelFlg(Constant::DISABLED);
+        $Recommend->setProduct($this->productRepository->find($productId));
+        $Recommend->setSortno($rank);
+        $Recommend->setVisible(true);
         $Recommend->setCreateDate($dateTime);
         $Recommend->setUpdateDate($dateTime);
-        $this->app['orm.em']->persist($Recommend);
-        $this->app['orm.em']->flush();
+        $this->entityManager->persist($Recommend);
+        $this->entityManager->flush();
 
         return $Recommend;
     }

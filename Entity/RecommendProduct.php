@@ -1,65 +1,86 @@
 <?php
+
 /*
- * This file is part of the Recommend Product plugin
+ * This file is part of EC-CUBE
  *
- * Copyright (C) 2016 LOCKON CO.,LTD. All Rights Reserved.
+ * Copyright(c) LOCKON CO.,LTD. All Rights Reserved.
+ *
+ * http://www.lockon.co.jp/
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Plugin\Recommend\Entity;
+namespace Plugin\Recommend4\Entity;
 
+use Doctrine\ORM\Mapping as ORM;
 use Eccube\Entity\AbstractEntity;
 use Eccube\Entity\Product;
-use Eccube\Util\EntityUtil;
 
 /**
- * RecommendProduct.
+ * RecommendProduct
+ *
+ * @ORM\Table(name="plg_recommend_product")
+ * @ORM\InheritanceType("SINGLE_TABLE")
+ * @ORM\DiscriminatorColumn(name="discriminator_type", type="string", length=255)
+ * @ORM\HasLifecycleCallbacks()
+ * @ORM\Entity(repositoryClass="Plugin\Recommend4\Repository\RecommendProductRepository")
  */
 class RecommendProduct extends AbstractEntity
 {
     /**
      * @var int
+     *
+     * @ORM\Column(name="recommend_id", type="integer", options={"unsigned":true})
+     * @ORM\Id
+     * @ORM\GeneratedValue(strategy="IDENTITY")
      */
     private $id;
 
     /**
      * @var string
+     *
+     * @ORM\Column(name="comment", type="text", nullable=true)
      */
     private $comment;
 
     /**
      * @var int
+     *
+     * @ORM\Column(name="sort_no", type="integer", nullable=true)
      */
-    private $rank;
+    private $sort_no;
 
     /**
-     * @var int
+     * @var boolean
+     *
+     * @ORM\Column(name="visible", type="boolean", options={"default":true})
      */
-    private $del_flg;
+    private $visible;
 
     /**
      * @var \DateTime
+     *
+     * @ORM\Column(name="create_date", type="datetimetz")
      */
     private $create_date;
 
     /**
      * @var \DateTime
+     *
+     * @ORM\Column(name="update_date", type="datetimetz")
      */
     private $update_date;
 
     /**
      * @var \Eccube\Entity\Product
+     *
+     * @ORM\OneToOne(targetEntity="Eccube\Entity\Product")
+     * @ORM\JoinColumns({
+     *   @ORM\JoinColumn(name="product_id", referencedColumnName="id")
+     * })
      */
     private $Product;
-
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-    }
 
     /**
      * Get recommend product id.
@@ -114,35 +135,35 @@ class RecommendProduct extends AbstractEntity
      *
      * @return int
      */
-    public function getRank()
+    public function getSortno()
     {
-        return $this->rank;
+        return $this->sort_no;
     }
 
     /**
      * Set rank.
      *
-     * @param int $rank
+     * @param int $sort_no
      *
      * @return $this
      */
-    public function setRank($rank)
+    public function setSortno($sort_no)
     {
-        $this->rank = $rank;
+        $this->sort_no = $sort_no;
 
         return $this;
     }
 
     /**
-     * Set del_flg.
+     * Set visible.
      *
-     * @param int $delFlg
+     * @param bool $visible
      *
      * @return $this
      */
-    public function setDelFlg($delFlg)
+    public function setVisible($visible)
     {
-        $this->del_flg = $delFlg;
+        $this->visible = $visible;
 
         return $this;
     }
@@ -150,11 +171,11 @@ class RecommendProduct extends AbstractEntity
     /**
      * Get del_flg.
      *
-     * @return int
+     * @return bool
      */
-    public function getDelFlg()
+    public function getVisible()
     {
-        return $this->del_flg;
+        return $this->visible;
     }
 
     /**
@@ -226,10 +247,6 @@ class RecommendProduct extends AbstractEntity
      */
     public function getProduct()
     {
-        if (EntityUtil::isEmpty($this->Product)) {
-            return null;
-        }
-
         return $this->Product;
     }
 }
